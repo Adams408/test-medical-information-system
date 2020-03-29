@@ -52,7 +52,7 @@
       <Position>2</Position>
       <DataType>text|0s</DataType>
     </column>
-    <column id="18" parent="8" name="Password">
+    <column id="18" parent="8" name="Authorization">
       <Position>3</Position>
       <DataType>text|0s</DataType>
     </column>
@@ -62,7 +62,6 @@
     </column>
     <index id="20" parent="8" name="user_ID_uindex">
       <ColNames>ID</ColNames>
-      <ColumnCollations></ColumnCollations>
       <Unique>1</Unique>
     </index>
     <key id="21" parent="8" name="user_pk">

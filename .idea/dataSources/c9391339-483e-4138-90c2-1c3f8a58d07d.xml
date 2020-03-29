@@ -43,7 +43,6 @@
     </column>
     <index id="15" parent="6" name="table_name_ID_uindex">
       <ColNames>ID</ColNames>
-      <ColumnCollations></ColumnCollations>
       <Unique>1</Unique>
     </index>
     <key id="16" parent="6" name="table_name_pk">
