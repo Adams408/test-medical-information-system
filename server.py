@@ -112,7 +112,7 @@ if __name__ == '__main__':
             # listen for any connections
             server.listen(1)
             client, addr = server.accept()
-            ssl_server = ssl.wrap_socket(client, server_side=True, ca_certs="./certificate/client.pem", certfile="./certificate/server.pem", keyfile="./certificate/server.key", cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2)
+            client = ssl.wrap_socket(client, server_side=True, ca_certs="./certificate/client.pem", certfile="./certificate/server.pem", keyfile="./certificate/server.key", cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2)
 
             # creates a new thread for each connected client
             thread = ClientThread(client, addr)

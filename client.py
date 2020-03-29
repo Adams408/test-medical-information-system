@@ -329,9 +329,9 @@ if __name__ == '__main__':
     context.load_cert_chain(certfile="./certificate/client.pem", keyfile="./certificate/client.key")
     
     if ssl.HAS_SNI:
-        ssl_client = context.wrap_socket(client, server_side=False, server_hostname=host)
+        client = context.wrap_socket(client, server_side=False, server_hostname=host)
     else:
-        ssl_client = context.wrap_socket(client, server_side=False)
+        client = context.wrap_socket(client, server_side=False)
 
     try:
         # run the gui
