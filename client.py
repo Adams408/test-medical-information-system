@@ -333,6 +333,11 @@ if __name__ == '__main__':
     else:
         client = context.wrap_socket(client, server_side=False)
 
+    cert = client.getpeercert()
+    # verify server
+    # if not cert or ('commonName', 'test') not in cert['subject'][4]:
+    #     raise Exception("ERROR")
+
     try:
         # run the gui
         GUI().mainloop()

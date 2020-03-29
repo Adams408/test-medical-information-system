@@ -111,11 +111,16 @@ if __name__ == '__main__':
         try:
             # listen for any connections
             server.listen(1)
-            client, addr = server.accept()
-            client = ssl.wrap_socket(client, server_side=True, ca_certs="./certificate/client.pem", certfile="./certificate/server.pem", keyfile="./certificate/server.key", cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2)
+            conn, addr = server.accept()
+            conn = ssl.wrap_socket(conn, server_side=True, ca_certs="./certificate/client.pem", certfile="./certificate/server.pem", keyfile="./certificate/server.key", cert_reqs=ssl.CERT_REQUIRED, ssl_version=ssl.PROTOCOL_TLSv1_2)
+
+            cert = conn.getpeercert()
+            # verify client
+            # if not cert or ('commonName', 'test') not in cert['subject'][4]:
+            #     raise Exception("ERROR")
 
             # creates a new thread for each connected client
-            thread = ClientThread(client, addr)
+            thread = ClientThread(conn, addr)
             thread.start()
         except Exception as e:
             print(e)
