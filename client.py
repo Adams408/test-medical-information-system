@@ -335,8 +335,8 @@ if __name__ == '__main__':
 
     cert = client.getpeercert()
     # verify server
-    # if not cert or ('commonName', 'test') not in cert['subject'][4]:
-    #     raise Exception("ERROR")
+    if not cert:
+        raise Exception('')
 
     try:
         # run the gui
@@ -346,5 +346,4 @@ if __name__ == '__main__':
     except Exception as e:
         print(e)
 
-    # ssl_client.close()
     client.close()
