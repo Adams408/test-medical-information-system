@@ -1,25 +1,30 @@
+import os
 import socket
 import ssl
 import threading
 import time
-
 import sqlite3
 import json
+
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
 
 class ClientThread(threading.Thread):
 
-    def __init__(self, _socket, client_addr):
+    def __init__(self, _socket, client_addr, public_key):
         threading.Thread.__init__(self)
 
         self._socket = _socket
+        self.public_key = public_key
         print('connected to client:', client_addr)
 
     def run(self):
 
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         # connect to the database
-        conn_u = sqlite3.connect("./database/user_information.db")
-        conn_p = sqlite3.connect("./database/patient_information.db")
+        conn_u = sqlite3.connect(os.path.join(BASE_DIR, "database/user_information.db"))
+        conn_p = sqlite3.connect(os.path.join(BASE_DIR, "database/patient_information.db"))
 
         u = conn_u.cursor()
         p = conn_p.cursor()
@@ -37,15 +42,15 @@ class ClientThread(threading.Thread):
                 u.execute('SELECT ID, Access_Privilege FROM "user" WHERE "Authorization" = "%s";' % auth)
                 q_data = u.fetchone()
                 if q_data is None:
-                    self._socket.send('Invalid username and password.'.encode())
+                    self._socket.send(self.rsa_encryption('Invalid username and password.'.encode()))
                 else:
                     _id = q_data[0]
-                    self._socket.send(q_data[1].encode())
+                    self._socket.send(self.rsa_encryption(q_data[1].encode()))
 
             # it will query the table and will get the names of every one in the database
             if data == 'all_patient_names':
                 p.execute('SELECT First_Name, Last_Name FROM patient;')
-                self._socket.send(json.dumps(p.fetchall()).encode())
+                self._socket.send(self.rsa_encryption(json.dumps(p.fetchall()).encode()))
 
             # it will query the table and will get the id of the entered name
             if data == 'name_to_id':
@@ -56,7 +61,7 @@ class ClientThread(threading.Thread):
             # it will query the table and will get all the information based of off the id
             if data == 'patient_info':
                 p.execute('SELECT * FROM patient WHERE ID = "%s";' % _id)
-                self._socket.send(json.dumps(p.fetchall()).encode())
+                self._socket.send(self.rsa_encryption(json.dumps(p.fetchall()).encode()))
 
             # it will insert the received data into the table
             if data == 'add_patient':
@@ -95,11 +100,23 @@ class ClientThread(threading.Thread):
 
         print("client at", addr, "disconnected...")
 
+    def rsa_encryption(self, pt):
+        return PKCS1_OAEP.new(self.public_key).encrypt(pt)
+
+    # def rsa_decryption(self, ct):
+    #     return PKCS1_OAEP.new(self.key).decrypt(ct)
+
 
 if __name__ == '__main__':
 
     host = 'localhost'
     port = 9999
+
+    # generate key for secret key cryptography
+    # key = RSA.generate(1024)
+    #
+    # public_key = key.publickey().exportKey()
+    # private_key = key.exportKey()
 
     # creates the socket to make the server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -119,8 +136,9 @@ if __name__ == '__main__':
             if not cert:
                 raise Exception('')
 
+            public_key = RSA.importKey(client.recv(port), passphrase=None)
             # creates a new thread for each connected client
-            thread = ClientThread(client, addr)
+            thread = ClientThread(client, addr, public_key)
             thread.start()
         except Exception as e:
             print(e)

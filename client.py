@@ -4,6 +4,9 @@ import tkinter as tk
 import json
 import base64
 
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+
 
 class GUI(tk.Tk):
 
@@ -48,6 +51,14 @@ class GUI(tk.Tk):
         return self.user.__name__
 
 
+def rsa_encryption(pt):
+    return PKCS1_OAEP.new(public_key).encrypt(pt)
+
+
+def rsa_decryption(ct):
+    return PKCS1_OAEP.new(key).decrypt(ct)
+
+
 class Login(tk.Frame):
 
     # initialize the login user interface frame and what it shows
@@ -76,7 +87,7 @@ class Login(tk.Frame):
         # encrypts the username and password
         encrypted = base64.b64encode(log.encode())
         client.send(encrypted)
-        auth = client.recv(port).decode()
+        auth = rsa_decryption(client.recv(port)).decode()
 
         if auth == 'doctor':
             controller.show_frame(Doctor)
@@ -91,7 +102,7 @@ class Login(tk.Frame):
 # display all patient names in a listbox
 def display(lb):
     client.send('all_patient_names'.encode())
-    names = json.loads(client.recv(port).decode())
+    names = json.loads(rsa_decryption(client.recv(port)).decode())
 
     lb.delete(0, tk.END)
     for i in range(len(names)):
@@ -108,7 +119,6 @@ def name_to_id(name):
     if name:
         client.send('name_to_id'.encode())
         client.send(str(name).encode())
-        # controller.show_frame(Info)
 
 
 # removes the selected patient name from the listbox
@@ -231,7 +241,7 @@ class Info(tk.Frame):
         loc = 1
 
         client.send('patient_info'.encode())
-        info = json.loads(client.recv(port).decode())
+        info = json.loads(rsa_decryption(client.recv(port)).decode())
         fields = ['ID', 'First_Name', 'Last_Name', 'Address', 'Phone_Number', 'Balance']
         entries = []
 
@@ -316,6 +326,12 @@ if __name__ == '__main__':
     host = 'localhost'
     port = 9999
 
+    # generate key for secret key cryptography
+    key = RSA.generate(1024)
+
+    public_key = key.publickey().exportKey()
+    private_key = key.exportKey()
+
     # creates the socket to make the client
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # connects to the server
@@ -325,9 +341,10 @@ if __name__ == '__main__':
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     context.verify_mode = ssl.CERT_REQUIRED
 
+    # verify certificate location and loads the client certificate and private key
     context.load_verify_locations("./certificate/server.pem")
     context.load_cert_chain(certfile="./certificate/client.pem", keyfile="./certificate/client.key")
-    
+
     if ssl.HAS_SNI:
         client = context.wrap_socket(client, server_side=False, server_hostname=host)
     else:
@@ -338,6 +355,7 @@ if __name__ == '__main__':
     if not cert:
         raise Exception('')
 
+    client.send(key.publickey().exportKey(format='PEM', passphrase=None, pkcs=1))
     try:
         # run the gui
         GUI().mainloop()
